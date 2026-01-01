@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # 1. CENTRAL PLATFORM CONTAINER
+  # ============================================
+  central-platform:
+    build:
+      context: ./central-platform
+      dockerfile: Dockerfile
+    container_name: greengrid-central
+    ports:
+      - "8086:8086"    # InfluxDB
+      - "5432:5432"    # PostgreSQL/PostGIS
+      - "3000:3000"    # Grafana
+      - "8080:8080"    # API Dashboard
+    environment:
+      - INFLUXDB_DB=telco_metrics
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin123
+      - POSTGRES_DB=geospatial_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+      - MQTT_BROKER=mqtt-middleware:1883
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+      - postgres-data:/var/lib/postgresql/data
+      - grafana-data:/var/lib/grafana
+      - ./central-platform/dashboards:/etc/grafana/dashboards
+    networks:
+      - greengrid-network
+    depends_on:
+      - mqtt-middleware
+
+  # ============================================
+  # 2. MQTT MIDDLEWARE CONTAINER
+  # ============================================
+  mqtt-middleware:
+    build:
+      context: ./mqtt-middleware
+      dockerfile: Dockerfile
+    container_name: greengrid-mqtt
+    ports:
+      - "1883:1883"    # MQTT
+      - "9001:9001"    # MQTT WebSocket
+      - "4317:4317"    # OpenTelemetry gRPC
+      - "4318:4318"    # OpenTelemetry HTTP
+    environment:
+      - MQTT_USERNAME=greengrid
+      - MQTT_PASSWORD=greengrid123
+      - OTEL_ENABLED=true
+      - CENTRAL_PLATFORM_URL=http://central-platform:8080
+    volumes:
+      - mqtt-data:/mosquitto/data
+      - ./mqtt-middleware/config:/mosquitto/config
+    networks:
+      - greengrid-network
+
+  # ============================================
+  # 3. EDGE GATEWAY A - CELL SITE
+  # ============================================
+  edge-gateway-cell:
+    build:
+      context: ./edge-gateway-cell
+      dockerfile: Dockerfile
+    container_name: greengrid-edge-cell
+    ports:
+      - "5020:5020"    # Modbus RTU Simulator
+      - "8081:8081"    # Local API
+    environment:
+      - GATEWAY_ID=CELL_SITE_001
+      - GATEWAY_TYPE=CELL
+      - MQTT_BROKER=mqtt-middleware:1883
+      - MQTT_USERNAME=greengrid
+      - MQTT_PASSWORD=greengrid123
+      - LOCATION_LAT=-6.2088
+      - LOCATION_LON=106.8456
+      - OFFLINE_BUFFER_SIZE=10000
+    volumes:
+      - cell-buffer:/data/buffer
+    networks:
+      - greengrid-network
+    depends_on:
+      - mqtt-middleware
+
+  # ============================================
+  # 4. EDGE GATEWAY B - DATA CENTER
+  # ============================================
+  edge-gateway-datacenter:
+    build:
+      context: ./edge-gateway-datacenter
+      dockerfile: Dockerfile
+    container_name: greengrid-edge-dc
+    ports:
+      - "502:502"      # Modbus TCP
+      - "4840:4840"    # OPC UA
+      - "8082:8082"    # Local API
+    environment:
+      - GATEWAY_ID=DC_SITE_001
+      - GATEWAY_TYPE=DATACENTER
+      - MQTT_BROKER=mqtt-middleware:1883
+      - MQTT_USERNAME=greengrid
+      - MQTT_PASSWORD=greengrid123
+      - LOCATION_LAT=-6.2293
+      - LOCATION_LON=106.8467
+      - HIGH_FREQ_SAMPLING=true
+      - SAMPLING_RATE_MS=100
+    volumes:
+      - dc-buffer:/data/buffer
+    networks:
+      - greengrid-network
+    depends_on:
+      - mqtt-middleware
+
+  # ============================================
+  # 5. EDGE GATEWAY C - SWITCH ROOM
+  # ============================================
+  edge-gateway-switchroom:
+    build:
+      context: ./edge-gateway-switchroom
+      dockerfile: Dockerfile
+    container_name: greengrid-edge-sr
+    ports:
+      - "161:161/udp"  # SNMP
+      - "8083:8083"    # Local HMI
+      - "1194:1194"    # OpenVPN
+    environment:
+      - GATEWAY_ID=SR_SITE_001
+      - GATEWAY_TYPE=SWITCHROOM
+      - MQTT_BROKER=mqtt-middleware:1883
+      - MQTT_USERNAME=greengrid
+      - MQTT_PASSWORD=greengrid123
+      - LOCATION_LAT=-6.2145
+      - LOCATION_LON=106.8489
+      - VPN_ENABLED=true
+    volumes:
+      - sr-buffer:/data/buffer
+      - ./edge-gateway-switchroom/hmi:/var/www/html
+    networks:
+      - greengrid-network
+    depends_on:
+      - mqtt-middleware
+
+volumes:
+  influxdb-data:
+  postgres-data:
+  grafana-data:
+  mqtt-data:
+  cell-buffer:
+  dc-buffer:
+  sr-buffer:
+
+networks:
+  greengrid-network:
+    driver: bridge
