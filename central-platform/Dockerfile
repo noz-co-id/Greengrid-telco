@@ -7,6 +7,41 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Telco Core Network Simulators (Open Source)
+# Install srsRAN (4G/5G software radio)
+RUN apt-get update && apt-get install -y \
+    cmake \
+    libfftw3-dev \
+    libmbedtls-dev \
+    libboost-program-options-dev \
+    libconfig++-dev \
+    libsctp-dev \
+    libuhd-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Open5GS (5G Core Network)
+RUN wget https://open5gs.org/open5gs/assets/webui/install -O /tmp/open5gs-install.sh && \
+    chmod +x /tmp/open5gs-install.sh
+
+# Install Osmocom (2G/3G Core Network)
+RUN apt-get update && apt-get install -y \
+    libosmocore-dev \
+    libosmo-netif-dev \
+    libosmo-abis-dev \
+    libosmo-sccp-dev \
+    osmo-bts \
+    osmo-bsc \
+    osmo-msc \
+    osmo-hlr \
+    osmo-sgsn \
+    osmo-ggsn \
     && rm -rf /var/lib/apt/lists/*
 
 # Install InfluxDB
