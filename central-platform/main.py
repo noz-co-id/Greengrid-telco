@@ -11,6 +11,11 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 import psycopg2
 import logging
 
+# Import Telco Core Network Simulator
+import sys
+sys.path.append('/app')
+from telco_core_simulator import TelcoCoreNetworkManager
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
