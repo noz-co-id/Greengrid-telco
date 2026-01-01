@@ -89,3 +89,24 @@ Monitoring:
 Real-time monitoring semua equipment
 Auto-refresh setiap 5 detik
 Color-coded status indicators
+
+```bash
+# Quick start (one command)
+chmod +x quickstart.sh
+./quickstart.sh
+
+# Manual
+docker-compose build
+docker-compose up -d
+
+# Testing
+bash test-deployment.sh
+python3 monitor-mqtt.py
+```
+### 📊 Akses Services:
+
+- Grafana: http://localhost:3000 (admin/admin)
+- Central API: http://localhost:8080/api
+- Cell Site: http://localhost:8081/api
+- Data Center: http://localhost:8082/api
+- Switch Room HMI: http://localhost:8083
