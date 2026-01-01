@@ -346,6 +346,27 @@ scripts/
 ├── ✅ test-telco-protocols.sh (NEW)
 └── ✅ README.md (updated)
 ```
+### How To Use
+```text
+# 1. Deploy (existing command)
+./quickstart.sh
+
+# 2. Test Telco Protocols
+chmod +x test-telco-protocols.sh
+./test-telco-protocols.sh
+
+# 3. Check Telco Statistics
+curl http://localhost:8080/api/telco/statistics | jq '.'
+
+# 4. Monitor Live 5G Signaling
+docker exec greengrid-mqtt mosquitto_sub \
+  -h localhost -u greengrid -P greengrid123 \
+  -t "greengrid/telco/NGAP" -v
+
+# 5. View Supported Protocols
+curl http://localhost:8080/api/telco/protocols | jq '.'
+````
+
 
 ## ✨ Summary
 
